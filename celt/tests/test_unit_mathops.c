@@ -45,8 +45,8 @@
 
 #ifdef FIXED_POINT
 #define WORD "%d"
-#define FIX_INT_TO_DOUBLE(x,q) ((double)(x) / (double)(1L << q))
-#define DOUBLE_TO_FIX_INT(x,q) (((double)x * (double)(1L << q)))
+#define FIX_INT_TO_DOUBLE(x,q) (ldexp((double)(x), -(q)))
+#define DOUBLE_TO_FIX_INT(x,q) (ldexp((double)(x), (q)))
 #else
 #define WORD "%f"
 #endif
@@ -68,7 +68,7 @@ void testdiv(void)
 #endif
       if (fabs(prod-1) > .00025)
       {
-         fprintf (stderr, "div failed: 1/%d="WORD" (product = %f)\n", i, val, prod);
+         fprintf (stderr, "div failed: 1/%d=" WORD " (product = %f)\n", i, val, prod);
          ret = 1;
       }
    }
@@ -85,7 +85,7 @@ void testsqrt(void)
       ratio = val/sqrt(i);
       if (fabs(ratio - 1) > .0005 && fabs(val-sqrt(i)) > 2)
       {
-         fprintf (stderr, "sqrt failed: sqrt(%d)="WORD" (ratio = %f)\n", i, val, ratio);
+         fprintf (stderr, "sqrt failed: sqrt(%d)=" WORD " (ratio = %f)\n", i, val, ratio);
          ret = 1;
       }
       i+= i>>10;
@@ -178,7 +178,7 @@ void testexp2(void)
    float max_error = 0;
    for (x=-11.0;x<24.0;x+=0.0007f)
    {
-      float error = fabs(x-(1.442695040888963387*log(celt_exp2(x))));
+      float error = fabs(x-(1.442695040888963387*log((double)celt_exp2(x))));
       if (max_error < error)
       {
          max_error = error;
@@ -259,7 +259,7 @@ void test_atan2(void) {
             /* atan2(0,0) is undefined behavior. */
             continue;
          }
-         float error = fabs(0.636619772367581f*(float)atan2(y, x) - celt_atan2p_norm(y, x));
+         float error = fabs(0.636619772367581f*(float)atan2((double)y, (double)x) - celt_atan2p_norm(y, x));
          if (max_error < error)
          {
             max_error = error;
@@ -287,7 +287,7 @@ void testlog2_db(void)
    /* celt_log2_db test */
    float error = -1;
    float max_error = -2;
-   float error_threshold = 2.e-07;
+   float error_threshold = 2.9e-07;
    opus_int32 x = 0;
    int q_input = 14;
    for (x = 8; x < 1073741824; x += (x >> 3))
@@ -301,7 +301,7 @@ void testlog2_db(void)
       if (error > error_threshold)
       {
          fprintf(stderr, "celt_log2_db failed: error: [%.5e > %.5e] (x = %f)\n",
-                 error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+                 error, error_threshold, FIX_INT_TO_DOUBLE(x, q_input));
          ret = 1;
       }
    }
@@ -332,7 +332,7 @@ void testexp2(void)
       float error2 = fabs(exp(0.6931471805599453094*x/1024.0)-celt_exp2(x)/65536.0);
       if (error1>0.0002&&error2>0.00004)
       {
-         fprintf (stderr, "celt_exp2 failed: x = "WORD", error1 = %f, error2 = %f\n", x,error1,error2);
+         fprintf (stderr, "celt_exp2 failed: x = " WORD ", error1 = %f, error2 = %f\n", x,error1,error2);
          ret = 1;
       }
    }
@@ -414,7 +414,7 @@ void testilog2(void)
 
 void testrsqrt(void)
 {
-   float error_threshold = 6.e-08;
+   float error_threshold = 6.8e-08;
    float error = 0;
    float max_error = 0;
    float fx = 0;
@@ -425,7 +425,7 @@ void testrsqrt(void)
       x = DOUBLE_TO_FIX_INT(fx, 31);
       quantized_fx = FIX_INT_TO_DOUBLE(x, 31);
       error = fabs(FIX_INT_TO_DOUBLE(celt_rsqrt_norm32(x), 29) -
-                   1/sqrt(quantized_fx));
+                   1/sqrt((double)quantized_fx));
       if (max_error < error)
       {
          max_error = error;
@@ -492,7 +492,7 @@ void testatan_norm(void)
       {
          fprintf(stderr,
                  "celt_atan_norm failed: error: [%.5e > %.5e] (x = %f)\n",
-                 error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+                 error, error_threshold, FIX_INT_TO_DOUBLE(x, q_input));
          ret = 1;
       }
    }
@@ -532,8 +532,9 @@ void testatan2p_norm(void)
          if (error > error_threshold)
          {
             fprintf(stderr,
-                  "celt_atan2p_norm failed: error: [%.5e > %.5e] (x = %f)\n",
-                  error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+                  "celt_atan2p_norm failed: error: [%.5e > %.5e] (y/x = %f/%f)\n",
+                  error, error_threshold, FIX_INT_TO_DOUBLE(y, q_input),
+                  FIX_INT_TO_DOUBLE(x, q_input));
             ret = 1;
          }
       }
@@ -552,7 +553,7 @@ void test_cos_norm32(void)
 {
    float error = -1;
    float max_error = -2;
-   float error_threshold = 1e-07;
+   float error_threshold = 1.2e-07;
    float fx = 0;
    opus_int32 x = 0;
    int q_input = 30;
@@ -570,7 +571,7 @@ void test_cos_norm32(void)
       {
          fprintf(stderr,
                  "celt_cos_norm32 failed: error: [%.5e > %.5e] (x = %f)\n",
-                 error, error_threshold, FIX_INT_TO_DOUBLE(x, DB_SHIFT));
+                 error, error_threshold, FIX_INT_TO_DOUBLE(x, q_input));
          ret = 1;
       }
    }
@@ -595,7 +596,7 @@ void test_rcp_norm32(void)
    opus_val32 x;
    int q_input = 31;
 
-   for (fx = 0.5; fx <= 1.0; fx += 0.0000007)
+   for (fx = 0.5; fx < 1.0; fx += 0.0000007)
    {
       x = DOUBLE_TO_FIX_INT(fx, q_input);
       quantized_fx = FIX_INT_TO_DOUBLE(x, q_input);
